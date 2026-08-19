@@ -59,6 +59,7 @@ function baseTemplate(title: string, bodyHtml: string) {
 
 export async function sendOrderConfirmationEmail(order: Order) {
   if (!isEmailConfigured()) return;
+  if (!order.customer.email) return;
 
   const html = baseTemplate(
     "Your order has been placed successfully!",
@@ -95,6 +96,7 @@ export async function sendOrderConfirmationEmail(order: Order) {
 
 export async function sendOrderStatusUpdateEmail(order: Order) {
   if (!isEmailConfigured()) return;
+  if (!order.customer.email) return;
 
   const html = baseTemplate(
     "Your order status has been updated",

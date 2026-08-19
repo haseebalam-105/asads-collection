@@ -81,6 +81,8 @@ const en = {
     checkout: "Proceed to Checkout",
     remove: "Remove",
     continueShopping: "Continue Shopping",
+    orderSummary: "Order Summary",
+    itemCount: "item(s) in your cart",
   },
   checkout: {
     title: "Checkout",
@@ -98,9 +100,12 @@ const en = {
     cod: "Cash on Delivery",
     codDesc: "Pay in cash when your order arrives at your doorstep.",
     orderSummary: "Order Summary",
+    subtitle: "Fill in your details below to complete your order.",
     placeOrder: "Place Order",
     placing: "Placing your order…",
     required: "This field is required",
+    discount: "Discount",
+    secureCheckout: "Secure checkout — your data is safe",
   },
   confirmation: {
     title: "Order Placed Successfully!",

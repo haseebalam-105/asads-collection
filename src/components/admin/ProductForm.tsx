@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Loader2, Upload, X, Save } from "lucide-react";
+import { Loader2, X, Save, ImageIcon } from "lucide-react";
 import { Product } from "@/types/product";
 
-const categories = [
-  { value: "raincoats", label: "Rain Coats" },
-  { value: "bike-covers", label: "Bike Covers" },
-  { value: "car-covers", label: "Car Covers" },
-  { value: "home-protection", label: "Home Protection" },
+const suggestedCategories = [
+  "Rain Coats",
+  "Bike Covers",
+  "Car Covers",
+  "Home Protection",
 ];
 
 type FormState = {
@@ -18,7 +18,7 @@ type FormState = {
   nameUr: string;
   slug: string;
   sku: string;
-  category: Product["category"];
+  category: string;
   shortDescEn: string;
   descEn: string;
   price: number;
@@ -26,9 +26,9 @@ type FormState = {
   stock: number;
   isFeatured: boolean;
   images: string[];
-  sizesText: string; // comma separated
-  colorsText: string; // comma separated
-  featuresText: string; // one per line
+  sizesText: string;
+  colorsText: string;
+  featuresText: string;
 };
 
 function toFormState(p?: Product): FormState {
@@ -37,7 +37,7 @@ function toFormState(p?: Product): FormState {
     nameUr: p?.name.ur || "",
     slug: p?.slug || "",
     sku: p?.sku || "",
-    category: p?.category || "raincoats",
+    category: p?.category || "",
     shortDescEn: p?.shortDescription.en || "",
     descEn: p?.description.en || "",
     price: p?.price || 0,
@@ -50,6 +50,11 @@ function toFormState(p?: Product): FormState {
     featuresText: p?.features?.map((f) => f.en).join("\n") || "",
   };
 }
+
+const sectionClass = "rounded-2xl border border-mist-dark/60 bg-white p-6 shadow-sm";
+const labelClass = "mb-1.5 block text-xs font-semibold text-storm";
+const inputClass =
+  "focus-ring w-full rounded-xl border border-mist-dark bg-white px-4 py-2.5 text-sm transition-all duration-200 hover:border-storm/40 focus:border-deep";
 
 export default function ProductForm({
   product,
@@ -148,70 +153,71 @@ export default function ProductForm({
   return (
     <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
       {error && (
-        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+        <div className="rounded-2xl bg-red-50 px-5 py-3.5 text-sm font-medium text-red-600">
           {error}
         </div>
       )}
 
-      <section className="rounded-xl2 bg-white p-6 shadow-card">
-        <h2 className="mb-4 font-display text-sm font-bold text-ink">Basic Info</h2>
+      <section className={sectionClass}>
+        <h2 className="mb-5 font-display text-sm font-bold text-ink">Basic Info</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-storm">Name (English) *</label>
+            <label className={labelClass}>Name (English) <span className="text-red-400">*</span></label>
             <input
               required
               value={form.nameEn}
               onChange={(e) => update("nameEn", e.target.value)}
-              className="focus-ring w-full rounded-lg border border-mist-dark px-4 py-2.5 text-sm"
+              placeholder="Premium Waterproof Rain Suit"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-storm">Name (Urdu)</label>
+            <label className={labelClass}>Name (Urdu)</label>
             <input
               dir="rtl"
               value={form.nameUr}
               onChange={(e) => update("nameUr", e.target.value)}
-              className="focus-ring w-full rounded-lg border border-mist-dark px-4 py-2.5 text-sm"
+              placeholder="پریمیم واٹر پروف رین سوٹ"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-storm">Slug</label>
+            <label className={labelClass}>Slug</label>
             <input
               value={form.slug}
               onChange={(e) => update("slug", e.target.value)}
               placeholder="auto-generated from name if left blank"
-              className="focus-ring w-full rounded-lg border border-mist-dark px-4 py-2.5 text-sm font-mono"
+              className={`${inputClass} font-mono text-xs`}
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-storm">SKU</label>
+            <label className={labelClass}>SKU</label>
             <input
               value={form.sku}
               onChange={(e) => update("sku", e.target.value)}
-              className="focus-ring w-full rounded-lg border border-mist-dark px-4 py-2.5 text-sm font-mono"
+              placeholder="ARC-RS-001"
+              className={`${inputClass} font-mono text-xs`}
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-storm">Category</label>
-            <select
+            <label className={labelClass}>Category</label>
+            <input
               value={form.category}
-              onChange={(e) => update("category", e.target.value as Product["category"])}
-              className="focus-ring w-full rounded-lg border border-mist-dark px-4 py-2.5 text-sm"
-            >
-              {categories.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+              onChange={(e) => update("category", e.target.value)}
+              placeholder="e.g. Rain Coats, Bike Covers, Car Covers…"
+              className={inputClass}
+            />
+            <p className="mt-1.5 text-[11px] leading-relaxed text-storm/70">
+              Suggestions: {suggestedCategories.join(" · ")}
+            </p>
           </div>
-          <div className="flex items-center gap-2 pt-6">
+          <div className="flex items-center gap-2.5 pt-6">
             <input
               type="checkbox"
               id="featured"
               checked={form.isFeatured}
               onChange={(e) => update("isFeatured", e.target.checked)}
-              className="h-4 w-4 accent-deep"
+              className="h-4 w-4 rounded accent-deep"
             />
             <label htmlFor="featured" className="text-sm text-ink">
               Show on homepage (Featured)
@@ -220,58 +226,57 @@ export default function ProductForm({
         </div>
       </section>
 
-      <section className="rounded-xl2 bg-white p-6 shadow-card">
-        <h2 className="mb-4 font-display text-sm font-bold text-ink">Description</h2>
+      <section className={sectionClass}>
+        <h2 className="mb-5 font-display text-sm font-bold text-ink">Description</h2>
         <div className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-storm">Short Description</label>
+            <label className={labelClass}>Short Description</label>
             <input
               value={form.shortDescEn}
               onChange={(e) => update("shortDescEn", e.target.value)}
-              className="focus-ring w-full rounded-lg border border-mist-dark px-4 py-2.5 text-sm"
+              placeholder="One-line summary for product cards"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-storm">Full Description</label>
+            <label className={labelClass}>Full Description</label>
             <textarea
               rows={4}
               value={form.descEn}
               onChange={(e) => update("descEn", e.target.value)}
-              className="focus-ring w-full rounded-lg border border-mist-dark px-4 py-2.5 text-sm"
+              placeholder="Detailed product description…"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-storm">
-              Features (one per line)
-            </label>
+            <label className={labelClass}>Features (one per line)</label>
             <textarea
               rows={4}
               value={form.featuresText}
               onChange={(e) => update("featuresText", e.target.value)}
-              className="focus-ring w-full rounded-lg border border-mist-dark px-4 py-2.5 text-sm"
+              placeholder={`100% waterproof fabric\nAdjustable hood\nBreathable material`}
+              className={inputClass}
             />
           </div>
         </div>
       </section>
 
-      <section className="rounded-xl2 bg-white p-6 shadow-card">
-        <h2 className="mb-4 font-display text-sm font-bold text-ink">Pricing & Stock</h2>
+      <section className={sectionClass}>
+        <h2 className="mb-5 font-display text-sm font-bold text-ink">Pricing & Stock</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-storm">Price (PKR) *</label>
+            <label className={labelClass}>Price (PKR) <span className="text-red-400">*</span></label>
             <input
               required
               type="number"
               min={0}
               value={form.price}
               onChange={(e) => update("price", Number(e.target.value))}
-              className="focus-ring w-full rounded-lg border border-mist-dark px-4 py-2.5 text-sm font-mono"
+              className={`${inputClass} font-mono`}
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-storm">
-              Compare-at Price (PKR)
-            </label>
+            <label className={labelClass}>Compare-at Price (PKR)</label>
             <input
               type="number"
               min={0}
@@ -279,84 +284,95 @@ export default function ProductForm({
               onChange={(e) =>
                 update("compareAtPrice", e.target.value === "" ? "" : Number(e.target.value))
               }
-              className="focus-ring w-full rounded-lg border border-mist-dark px-4 py-2.5 text-sm font-mono"
+              className={`${inputClass} font-mono`}
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-storm">Stock Quantity</label>
+            <label className={labelClass}>Stock Quantity</label>
             <input
               type="number"
               min={0}
               value={form.stock}
               onChange={(e) => update("stock", Number(e.target.value))}
-              className="focus-ring w-full rounded-lg border border-mist-dark px-4 py-2.5 text-sm font-mono"
+              className={`${inputClass} font-mono`}
             />
           </div>
         </div>
       </section>
 
-      <section className="rounded-xl2 bg-white p-6 shadow-card">
-        <h2 className="mb-4 font-display text-sm font-bold text-ink">Variants</h2>
+      <section className={sectionClass}>
+        <h2 className="mb-5 font-display text-sm font-bold text-ink">Variants</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-storm">
-              Sizes (comma separated)
-            </label>
+            <label className={labelClass}>Sizes (comma separated)</label>
             <input
               value={form.sizesText}
               onChange={(e) => update("sizesText", e.target.value)}
               placeholder="S, M, L, XL"
-              className="focus-ring w-full rounded-lg border border-mist-dark px-4 py-2.5 text-sm"
+              className={inputClass}
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-semibold text-storm">
-              Colours (comma separated)
-            </label>
+            <label className={labelClass}>Colours (comma separated)</label>
             <input
               value={form.colorsText}
               onChange={(e) => update("colorsText", e.target.value)}
               placeholder="Black, Blue"
-              className="focus-ring w-full rounded-lg border border-mist-dark px-4 py-2.5 text-sm"
+              className={inputClass}
             />
           </div>
         </div>
       </section>
 
-      <section className="rounded-xl2 bg-white p-6 shadow-card">
-        <h2 className="mb-4 font-display text-sm font-bold text-ink">Images</h2>
+      <section className={sectionClass}>
+        <h2 className="mb-5 font-display text-sm font-bold text-ink">Images</h2>
         <div className="mb-4 flex flex-wrap gap-3">
           {form.images.map((url) => (
-            <div key={url} className="group relative h-24 w-24 overflow-hidden rounded-lg bg-mist">
+            <div key={url} className="group relative h-28 w-28 overflow-hidden rounded-2xl border border-mist-dark/60 bg-mist">
               <Image src={url} alt="" fill className="object-cover" />
-              <button
-                type="button"
-                onClick={() => removeImage(url)}
-                className="absolute right-1 top-1 rounded-full bg-ink/70 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100"
-              >
-                <X size={12} />
-              </button>
+              <div className="absolute inset-0 flex items-center justify-center bg-ink/0 transition-colors group-hover:bg-ink/30">
+                <button
+                  type="button"
+                  onClick={() => removeImage(url)}
+                  className="rounded-full bg-white/90 p-1.5 text-red-500 opacity-0 shadow transition-opacity group-hover:opacity-100"
+                >
+                  <X size={14} />
+                </button>
+              </div>
             </div>
           ))}
-          <label className="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-mist-dark text-storm hover:border-deep hover:text-deep">
-            {uploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
+          <label className="flex h-28 w-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-mist-dark text-storm transition-all hover:border-deep hover:bg-deep/5 hover:text-deep">
+            {uploading ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <ImageIcon size={20} />
+            )}
             <span className="text-[10px] font-semibold">Upload</span>
             <input type="file" accept="image/*" className="hidden" onChange={handleUpload} />
           </label>
         </div>
-        <p className="text-xs text-storm">
+        <p className="text-xs text-storm/60">
           Uploads go to Cloudinary — requires CLOUDINARY_* env vars to be set.
         </p>
       </section>
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="focus-ring flex items-center gap-2 rounded-full bg-deep px-6 py-3 text-sm font-bold text-white disabled:opacity-60"
-      >
-        {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-        {productId ? "Save Changes" : "Create Product"}
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={saving}
+          className="focus-ring flex items-center gap-2 rounded-xl bg-deep px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-deep/20 transition-all duration-200 hover:bg-deep-light hover:shadow-deep/30 active:scale-[0.98] disabled:opacity-60 disabled:shadow-none"
+        >
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+          {productId ? "Save Changes" : "Create Product"}
+        </button>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="rounded-xl border border-mist-dark px-6 py-3.5 text-sm font-semibold text-storm transition-colors hover:bg-mist"
+        >
+          Cancel
+        </button>
+      </div>
     </form>
   );
 }

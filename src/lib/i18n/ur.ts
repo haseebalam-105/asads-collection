@@ -83,6 +83,8 @@ const ur: Dictionary = {
     checkout: "چیک آؤٹ کریں",
     remove: "ہٹائیں",
     continueShopping: "خریداری جاری رکھیں",
+    orderSummary: "آرڈر کا خلاصہ",
+    itemCount: "آپ کے کارٹ میں اشیاء",
   },
   checkout: {
     title: "چیک آؤٹ",
@@ -100,9 +102,12 @@ const ur: Dictionary = {
     cod: "ادائیگی بذریعہ کیش آن ڈیلیوری",
     codDesc: "آپ کا آرڈر پہنچنے پر نقد ادائیگی کریں۔",
     orderSummary: "آرڈر کا خلاصہ",
+    subtitle: "نیچے اپنی تفصیلات بھریں اور آرڈر مکمل کریں۔",
     placeOrder: "آرڈر کریں",
     placing: "آپ کا آرڈر جمع کیا جا رہا ہے…",
     required: "یہ خانہ لازمی ہے",
+    discount: "رعایت",
+    secureCheckout: "محفوظ چیک آؤٹ — آپ کا ڈیٹا محفوظ ہے",
   },
   confirmation: {
     title: "آرڈر کامیابی سے جمع ہو گیا!",

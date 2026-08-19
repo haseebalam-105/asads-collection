@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       slug: body.slug,
       sku: body.sku || `ARC-${Date.now()}`,
       name: body.name,
-      category: body.category || "raincoats",
+      category: body.category || "",
       shortDescription: body.shortDescription || { en: "", ur: "" },
       description: body.description || { en: "", ur: "" },
       features: body.features || [],

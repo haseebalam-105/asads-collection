@@ -25,7 +25,7 @@ export interface Product {
   slug: string;
   sku: string;
   name: LocalizedText;
-  category: "raincoats" | "bike-covers" | "car-covers" | "home-protection";
+  category: string;
   shortDescription: LocalizedText;
   description: LocalizedText;
   features: LocalizedText[];

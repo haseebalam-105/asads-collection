@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     if (!items?.length) {
       return NextResponse.json({ error: "Cart is empty." }, { status: 400 });
     }
-    const required: (keyof CustomerDetails)[] = ["fullName", "email", "phone", "city", "address"];
+    const required: (keyof CustomerDetails)[] = ["fullName", "phone", "city", "address"];
     for (const field of required) {
       if (!customer?.[field]) {
         return NextResponse.json(
