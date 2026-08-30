@@ -4,10 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Loader2, Lock, ShieldCheck } from "lucide-react";
-import { siteSettings } from "@/lib/settings";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const siteSettings = useSettings();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);

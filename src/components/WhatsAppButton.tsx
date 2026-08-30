@@ -1,9 +1,10 @@
 "use client";
 
 import { MessageCircle } from "lucide-react";
-import { siteSettings } from "@/lib/settings";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function WhatsAppButton() {
+  const siteSettings = useSettings();
   return (
     <a
       href={`https://wa.me/${siteSettings.whatsapp}`}

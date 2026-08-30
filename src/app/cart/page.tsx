@@ -7,11 +7,13 @@ import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { formatPKR } from "@/lib/format";
 import { getDeliveryFee } from "@/lib/settings";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, subtotal } = useCart();
   const { t, locale } = useLanguage();
-  const deliveryFee = getDeliveryFee(subtotal);
+  const settings = useSettings();
+  const deliveryFee = getDeliveryFee(subtotal, settings);
   const total = subtotal + deliveryFee;
 
   if (items.length === 0) {

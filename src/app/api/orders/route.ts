@@ -3,6 +3,7 @@ import { CartItem, CustomerDetails, Order } from "@/types/product";
 import { saveOrder, findOrder } from "@/lib/orders-store";
 import { generateOrderNumber } from "@/lib/format";
 import { getDeliveryFee } from "@/lib/settings";
+import { dbGetSettings } from "@/lib/db/settings";
 import { isDbConfigured } from "@/lib/db";
 
 // POST /api/orders — place a new order (guest checkout, COD only)
@@ -29,7 +30,8 @@ export async function POST(req: NextRequest) {
     }
 
     const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-    const deliveryFee = getDeliveryFee(subtotal);
+    const liveSettings = isDbConfigured() ? await dbGetSettings() : undefined;
+    const deliveryFee = getDeliveryFee(subtotal, liveSettings);
 
     // Discount is always recomputed server-side from the coupon code —
     // never trust a client-supplied discount amount.

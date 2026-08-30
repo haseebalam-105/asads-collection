@@ -1,10 +1,11 @@
 "use client";
 
 import { useLanguage } from "@/context/LanguageContext";
-import { siteSettings } from "@/lib/settings";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function PrivacyPolicyPage() {
   const { t } = useLanguage();
+  const siteSettings = useSettings();
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:px-8">
       <h1 className="mb-6 font-display text-2xl font-extrabold text-ink">

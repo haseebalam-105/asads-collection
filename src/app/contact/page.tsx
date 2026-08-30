@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { Phone, Mail, MapPin, MessageCircle, Send, CheckCircle2 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
-import { siteSettings } from "@/lib/settings";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function ContactPage() {
   const { t, locale } = useLanguage();
+  const siteSettings = useSettings();
   const [sent, setSent] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", message: "" });
 

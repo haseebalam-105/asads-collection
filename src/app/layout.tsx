@@ -3,6 +3,7 @@ import { Manrope, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { CartProvider } from "@/context/CartContext";
+import { SettingsProvider } from "@/context/SettingsContext";
 import SiteChrome from "@/components/SiteChrome";
 
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope", weight: ["500", "700", "800"] });
@@ -27,11 +28,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${manrope.variable} ${inter.variable} ${plexMono.variable}`}>
       <body>
-        <LanguageProvider>
-          <CartProvider>
-            <SiteChrome>{children}</SiteChrome>
-          </CartProvider>
-        </LanguageProvider>
+        <SettingsProvider>
+          <LanguageProvider>
+            <CartProvider>
+              <SiteChrome>{children}</SiteChrome>
+            </CartProvider>
+          </LanguageProvider>
+        </SettingsProvider>
       </body>
     </html>
   );

@@ -4,10 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Facebook, MessageCircle, Mail, Phone, MapPin } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
-import { siteSettings } from "@/lib/settings";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function Footer() {
   const { t, locale } = useLanguage();
+  const siteSettings = useSettings();
 
   return (
     <footer className="border-t border-mist-dark bg-deep text-white">

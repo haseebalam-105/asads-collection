@@ -8,6 +8,7 @@ import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { formatPKR } from "@/lib/format";
 import { getDeliveryFee } from "@/lib/settings";
+import { useSettings } from "@/context/SettingsContext";
 import { CustomerDetails, Coupon } from "@/types/product";
 
 const emptyForm: CustomerDetails = {
@@ -24,6 +25,7 @@ const emptyForm: CustomerDetails = {
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart();
   const { t, locale } = useLanguage();
+  const settings = useSettings();
   const router = useRouter();
 
   const [form, setForm] = useState<CustomerDetails>(emptyForm);
@@ -37,7 +39,7 @@ export default function CheckoutPage() {
   const [couponError, setCouponError] = useState("");
   const [applyingCoupon, setApplyingCoupon] = useState(false);
 
-  const deliveryFee = getDeliveryFee(subtotal);
+  const deliveryFee = getDeliveryFee(subtotal, settings);
   const total = subtotal + deliveryFee - discount;
 
   const handleApplyCoupon = async () => {

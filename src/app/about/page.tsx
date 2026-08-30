@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import { useLanguage } from "@/context/LanguageContext";
-import { siteSettings } from "@/lib/settings";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function AboutPage() {
   const { locale } = useLanguage();
+  const siteSettings = useSettings();
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">

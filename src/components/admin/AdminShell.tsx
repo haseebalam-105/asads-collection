@@ -16,7 +16,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { siteSettings } from "@/lib/settings";
+import { useSettings } from "@/context/SettingsContext";
 import { useState } from "react";
 
 const navItems = [
@@ -34,6 +34,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const siteSettings = useSettings();
 
   if (pathname === "/admin/login") {
     return <>{children}</>;

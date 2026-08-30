@@ -12,7 +12,10 @@ export const siteSettings = {
   metaPixelId: "",
 };
 
-export function getDeliveryFee(subtotal: number) {
-  if (subtotal >= siteSettings.freeDeliveryThreshold) return 0;
-  return siteSettings.deliveryFee;
+export function getDeliveryFee(
+  subtotal: number,
+  settings: Pick<typeof siteSettings, "deliveryFee" | "freeDeliveryThreshold"> = siteSettings
+) {
+  if (subtotal >= settings.freeDeliveryThreshold) return 0;
+  return settings.deliveryFee;
 }

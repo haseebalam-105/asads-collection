@@ -7,11 +7,12 @@ import { useRouter } from "next/navigation";
 import { Menu, X, Search, ShoppingCart, Globe } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCart } from "@/context/CartContext";
-import { siteSettings } from "@/lib/settings";
+import { useSettings } from "@/context/SettingsContext";
 
 export default function Navbar() {
   const { t, locale, setLocale } = useLanguage();
   const { itemCount, openDrawer } = useCart();
+  const siteSettings = useSettings();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [query, setQuery] = useState("");
