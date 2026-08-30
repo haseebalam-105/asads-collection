@@ -5,6 +5,11 @@ import { generateOrderNumber } from "@/lib/format";
 import { getDeliveryFee } from "@/lib/settings";
 import { dbGetSettings } from "@/lib/db/settings";
 import { isDbConfigured } from "@/lib/db";
+import { sendMetaEvent } from "@/lib/meta-capi";
+
+// Prevent Next.js from statically caching this route.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 // POST /api/orders — place a new order (guest checkout, COD only)
 export async function POST(req: NextRequest) {
@@ -77,7 +82,51 @@ export async function POST(req: NextRequest) {
       // the order from being placed if it fails.
     }
 
-    return NextResponse.json({ order }, { status: 201 });
+    // Meta Purchase event — fired server-side so it's tracked reliably even
+    // if the customer's browser blocks the Pixel, closes the tab before the
+    // confirmation page loads, or has tracking prevention enabled. order.id
+    // is reused as the event_id so the browser-side Purchase fired on the
+    // confirmation page (same id) gets deduplicated by Meta into one event.
+    try {
+      if (isDbConfigured()) {
+        const settings = liveSettings || (await dbGetSettings());
+        const ip =
+          req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+          req.headers.get("x-real-ip") ||
+          undefined;
+        const userAgent = req.headers.get("user-agent") || undefined;
+
+        await sendMetaEvent({
+          pixelId: settings.metaPixelId,
+          accessToken: settings.metaAccessToken,
+          testEventCode: settings.metaTestEventCode || undefined,
+          eventName: "Purchase",
+          eventId: order.id,
+          eventSourceUrl: req.headers.get("referer") || undefined,
+          userData: {
+            email: customer.email,
+            phone: customer.phone,
+            firstName: customer.fullName?.split(" ")[0],
+            city: customer.city,
+            ip,
+            userAgent,
+          },
+          customData: {
+            currency: "PKR",
+            value: order.total,
+            content_ids: items.map((i) => i.productId),
+            content_type: "product",
+            contents: items.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+            num_items: items.reduce((sum, i) => sum + i.quantity, 0),
+            order_id: order.orderNumber,
+          },
+        });
+      }
+    } catch {
+      // Ad-tracking failures should never block or fail an actual order.
+    }
+
+    return NextResponse.json({ order, metaEventId: order.id }, { status: 201 });
   } catch (err) {
     return NextResponse.json({ error: "Could not place order." }, { status: 500 });
   }

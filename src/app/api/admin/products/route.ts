@@ -3,6 +3,12 @@ import { isDbConfigured } from "@/lib/db";
 import { dbGetAllProducts, dbCreateProduct } from "@/lib/db/products";
 import { Product } from "@/types/product";
 
+// Prevent Next.js from statically caching this route at build time so
+// admin edits show up immediately without a redeploy.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+
 function requireDb() {
   if (!isDbConfigured()) {
     throw new Error(

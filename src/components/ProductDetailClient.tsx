@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -10,6 +10,7 @@ import StarRating from "@/components/StarRating";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCart } from "@/context/CartContext";
 import { formatPKR, discountPercent } from "@/lib/format";
+import { trackMetaEvent } from "@/lib/meta-track";
 import { Product } from "@/types/product";
 
 export default function ProductDetailClient({
@@ -31,6 +32,18 @@ export default function ProductDetailClient({
   const discount = discountPercent(product.price, product.compareAtPrice);
   const inStock = product.stock > 0;
 
+  // Meta ViewContent — fired once when the customer lands on this product.
+  useEffect(() => {
+    trackMetaEvent("ViewContent", {
+      currency: "PKR",
+      value: product.price,
+      content_ids: [product.id],
+      content_name: product.name.en,
+      content_type: "product",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id]);
+
   const handleAdd = () => {
     addItem({
       productId: product.id,
@@ -41,6 +54,14 @@ export default function ProductDetailClient({
       size,
       color,
       quantity,
+    });
+    trackMetaEvent("AddToCart", {
+      currency: "PKR",
+      value: product.price * quantity,
+      content_ids: [product.id],
+      content_name: product.name.en,
+      content_type: "product",
+      contents: [{ id: product.id, quantity, item_price: product.price }],
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);

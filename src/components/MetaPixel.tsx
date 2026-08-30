@@ -1,22 +1,7 @@
 "use client";
 import { Suspense, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-
-interface FbqFunction {
-  (...args: unknown[]): void;
-  callMethod?: (...args: unknown[]) => void;
-  queue: unknown[][];
-  push: FbqFunction;
-  loaded: boolean;
-  version: string;
-}
-
-declare global {
-  interface Window {
-    fbq?: FbqFunction;
-    _fbq?: FbqFunction;
-  }
-}
+import type { FbqFunction } from "@/types/fbq";
 
 // Loads Facebook's Pixel base code (matches the official snippet from Events
 // Manager) and initializes it with the Pixel ID saved in the admin settings.

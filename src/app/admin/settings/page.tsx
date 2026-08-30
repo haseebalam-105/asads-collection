@@ -7,12 +7,14 @@ interface SettingsForm {
   deliveryFee: number; freeDeliveryThreshold: number;
   phone: string; whatsapp: string; email: string;
   facebook: string; city: string; metaPixelId: string;
+  metaAccessToken: string; metaTestEventCode: string;
 }
 
 const defaultForm: SettingsForm = {
   brandName: "", brandNameUr: "", logoSrc: "/images/logo-new.jpeg",
   deliveryFee: 200, freeDeliveryThreshold: 3000,
   phone: "", whatsapp: "", email: "", facebook: "", city: "", metaPixelId: "",
+  metaAccessToken: "", metaTestEventCode: "",
 };
 
 export default function AdminSettingsPage() {
@@ -31,9 +33,15 @@ export default function AdminSettingsPage() {
     e.preventDefault(); if (!form) return;
     setSaving(true); setError("");
     try {
-      await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-      setSaved(true); setTimeout(() => setSaved(false), 2500);
-    } catch { setError("Failed to save settings."); }
+      const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data?.error) {
+        setError(data?.error || `Save failed (status ${res.status}).`);
+      } else {
+        setForm({ ...defaultForm, ...data.settings });
+        setSaved(true); setTimeout(() => setSaved(false), 2500);
+      }
+    } catch { setError("Failed to save settings — check your network connection."); }
     setSaving(false);
   };
 
@@ -65,6 +73,21 @@ export default function AdminSettingsPage() {
           <h2 className="font-display text-sm font-bold text-ink">Tracking &amp; Ads</h2>
         </div>
         <Field label="Meta (Facebook) Pixel ID" value={form.metaPixelId} onChange={(v) => setForm((f) => f ? { ...f, metaPixelId: v } : f)} placeholder="e.g. 123456789012345" hint="Get this from Facebook Events Manager. Leave empty to disable." />
+        <Field
+          label="Meta Conversions API Access Token"
+          type="password"
+          value={form.metaAccessToken}
+          onChange={(v) => setForm((f) => (f ? { ...f, metaAccessToken: v } : f))}
+          placeholder="EAAG..."
+          hint="Events Manager → your Pixel → Settings → Conversions API → Generate access token. Required for server-side tracking (AddToCart, InitiateCheckout, Purchase) so ads still get data even with ad blockers or iOS privacy settings."
+        />
+        <Field
+          label="Test Event Code"
+          value={form.metaTestEventCode}
+          onChange={(v) => setForm((f) => (f ? { ...f, metaTestEventCode: v } : f))}
+          placeholder="TEST12345 (optional)"
+          hint="Paste this temporarily from Events Manager → Test Events to verify events are arriving, then remove it — leaving it in place stops events from being used for ad delivery."
+        />
 
         {error && <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"><AlertCircle size={14} />{error}</div>}
 

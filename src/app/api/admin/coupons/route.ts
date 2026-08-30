@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { dbGetCoupons, dbCreateCoupon } from "@/lib/db/coupons";
 import { Coupon } from "@/types/product";
 
+// Prevent Next.js from statically caching this route at build time so
+// admin edits show up immediately without a redeploy.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+
 export async function GET() {
   try {
     const coupons = await dbGetCoupons();

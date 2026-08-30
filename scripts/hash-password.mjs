@@ -1,6 +1,7 @@
 // Usage: node scripts/hash-password.mjs "YourStrongPassword123"
 // Copy the printed hash into ADMIN_PASSWORD_HASH in .env.local
 
+
 import bcrypt from "bcryptjs";
 
 const password = process.argv[2];

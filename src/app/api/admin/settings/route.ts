@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbGetSettings, dbUpdateSettings } from "@/lib/db/settings";
 
+// Same fix as the public /api/settings route — prevent Next.js from
+// statically caching this GET handler at build time.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const settings = await dbGetSettings();

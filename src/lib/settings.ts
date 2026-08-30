@@ -10,6 +10,10 @@ export const siteSettings = {
   facebook: "https://facebook.com/asadscollection",
   city: "Lahore, Pakistan",
   metaPixelId: "",
+  // Server-side Meta Conversions API. Never exposed on the public
+  // /api/settings endpoint — only used inside API routes on the server.
+  metaAccessToken: "",
+  metaTestEventCode: "",
 };
 
 export function getDeliveryFee(

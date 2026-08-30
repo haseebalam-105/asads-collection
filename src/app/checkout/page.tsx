@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Banknote, Loader2, Tag, X, ShieldCheck, User, MapPin, CreditCard } from "lucide-react";
@@ -9,6 +9,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { formatPKR } from "@/lib/format";
 import { getDeliveryFee } from "@/lib/settings";
 import { useSettings } from "@/context/SettingsContext";
+import { trackMetaEvent, trackMetaPixelOnly } from "@/lib/meta-track";
 import { CustomerDetails, Coupon } from "@/types/product";
 
 const emptyForm: CustomerDetails = {
@@ -41,6 +42,23 @@ export default function CheckoutPage() {
 
   const deliveryFee = getDeliveryFee(subtotal, settings);
   const total = subtotal + deliveryFee - discount;
+
+  // Meta InitiateCheckout — fired once per checkout session, not on every
+  // re-render (coupon changes, form typing, etc. all re-run this component).
+  const firedInitiateCheckout = useRef(false);
+  useEffect(() => {
+    if (firedInitiateCheckout.current || items.length === 0) return;
+    firedInitiateCheckout.current = true;
+    trackMetaEvent("InitiateCheckout", {
+      currency: "PKR",
+      value: subtotal,
+      content_ids: items.map((i) => i.productId),
+      content_type: "product",
+      contents: items.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+      num_items: items.reduce((sum, i) => sum + i.quantity, 0),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.length]);
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -116,6 +134,26 @@ export default function CheckoutPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to place order");
+
+      // The server already sent this Purchase event to Meta's Conversions
+      // API (reliable, works even if this browser call never fires). This
+      // just fires the matching browser-side Pixel event, using the same
+      // event_id, so Meta dedupes the two into a single counted Purchase.
+      if (data.metaEventId) {
+        trackMetaPixelOnly(
+          "Purchase",
+          {
+            currency: "PKR",
+            value: total,
+            content_ids: items.map((i) => i.productId),
+            content_type: "product",
+            contents: items.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
+            num_items: items.reduce((sum, i) => sum + i.quantity, 0),
+            order_id: data.order.orderNumber,
+          },
+          data.metaEventId
+        );
+      }
 
       clearCart();
       router.push(`/order-confirmation/${data.order.orderNumber}`);
