@@ -13,6 +13,7 @@ out/
 
 # Vercel files
 .vercel/
+vercel
 
 # Logs
 npm-debug.log*
