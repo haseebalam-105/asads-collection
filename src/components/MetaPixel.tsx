@@ -44,7 +44,7 @@ function MetaPixelInner() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/settings")
+    fetch("/api/settings", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         if (cancelled || !d.metaPixelId) return;

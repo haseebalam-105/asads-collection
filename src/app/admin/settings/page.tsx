@@ -24,7 +24,7 @@ export default function AdminSettingsPage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    fetch("/api/admin/settings").then(r => r.json()).then(d => {
+    fetch("/api/admin/settings", { cache: "no-store" }).then(r => r.json()).then(d => {
       if (d.error) setError(d.error); else setForm({ ...defaultForm, ...d.settings });
     });
   }, []);
@@ -33,7 +33,7 @@ export default function AdminSettingsPage() {
     e.preventDefault(); if (!form) return;
     setSaving(true); setError("");
     try {
-      const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      const res = await fetch("/api/admin/settings", { method: "PUT", cache: "no-store", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data?.error) {
         setError(data?.error || `Save failed (status ${res.status}).`);

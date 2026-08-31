@@ -13,6 +13,13 @@ export const revalidate = 0;
 // info, Meta Pixel, etc.) to read the live values saved from /admin/settings.
 // Only ever exposes fields that are already shown publicly on the site.
 export async function GET() {
+  // Belt-and-suspenders against any layer (browser, Vercel Edge, corporate
+  // proxy) that might still try to cache/conditionally-revalidate this.
+  const noCacheHeaders = {
+    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+  };
   try {
     const settings = await dbGetSettings();
     return NextResponse.json({
@@ -27,10 +34,12 @@ export async function GET() {
       facebook: settings.facebook,
       city: settings.city,
       metaPixelId: settings.metaPixelId || "",
+    }, {
+      headers: noCacheHeaders,
     });
   } catch {
     // DB unreachable — fall back to null so the client keeps using its
     // built-in defaults instead of breaking the page.
-    return NextResponse.json({ error: "unavailable" }, { status: 200 });
+    return NextResponse.json({ error: "unavailable" }, { status: 200, headers: noCacheHeaders });
   }
 }

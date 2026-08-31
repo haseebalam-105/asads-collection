@@ -19,7 +19,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/settings")
+    fetch("/api/settings", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         if (cancelled || d.error) return;
