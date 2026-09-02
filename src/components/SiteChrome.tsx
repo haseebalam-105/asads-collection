@@ -7,7 +7,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import CartDrawer from "@/components/CartDrawer";
 import MetaPixel from "@/components/MetaPixel";
 
-export default function SiteChrome({ children }: { children: React.ReactNode }) {
+export default function SiteChrome({ children, metaPixelId }: { children: React.ReactNode; metaPixelId: string }) {
   const pathname = usePathname();
   const isAdmin = pathname?.startsWith("/admin");
 
@@ -17,7 +17,7 @@ export default function SiteChrome({ children }: { children: React.ReactNode }) 
 
   return (
     <>
-      <MetaPixel />
+      <MetaPixel pixelId={metaPixelId} />
       <Navbar />
       <main className="min-h-screen">{children}</main>
       <Footer />
