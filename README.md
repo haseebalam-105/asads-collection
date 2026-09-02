@@ -4,7 +4,7 @@ A complete, premium, rain-themed e-commerce platform: customer storefront +
 admin dashboard, built with Next.js 14 (App Router), TypeScript, Tailwind
 CSS, Framer Motion, and MongoDB.
 
-## What's included
+## What's included in 
 
 **Storefront** — Home, Shop (search/filter/sort), Product detail (gallery,
 variants, reviews, related products), Cart, Checkout (guest, COD, coupon
