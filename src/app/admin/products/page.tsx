@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Plus, Pencil, Trash2, Search, Package } from "lucide-react";
 import { Product } from "@/types/product";
 import { formatPKR } from "@/lib/format";
+import { getDisplayPrice, hasVariants } from "@/lib/variants";
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -126,17 +127,35 @@ export default function AdminProductsPage() {
                       {p.category}
                     </span>
                   </td>
-                  <td className="px-5 py-4 font-mono font-semibold text-ink">{formatPKR(p.price)}</td>
+                  <td className="px-5 py-4 font-mono font-semibold text-ink">
+                    {hasVariants(p) ? (
+                      <span>
+                        <span className="text-[10px] uppercase text-storm">From</span>{" "}
+                        {formatPKR(getDisplayPrice(p))}
+                        <span className="ml-2 rounded bg-mist px-1.5 py-0.5 text-[10px] text-storm">
+                          {(p.variants || []).length} variant{(p.variants || []).length === 1 ? "" : "s"}
+                        </span>
+                      </span>
+                    ) : (
+                      formatPKR(p.price)
+                    )}
+                  </td>
                   <td className="px-5 py-4">
-                    <span
-                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
-                        p.stock <= 10
-                          ? "bg-red-50 text-red-600"
-                          : "bg-green-50 text-green-700"
-                      }`}
-                    >
-                      {p.stock}
-                    </span>
+                    {hasVariants(p) ? (
+                      <span className="rounded-lg bg-mist px-2.5 py-1 text-xs font-semibold text-storm">
+                        Σ {(p.variants || []).reduce((sum, v) => sum + (v.stock || 0), 0)}
+                      </span>
+                    ) : (
+                      <span
+                        className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
+                          p.stock <= 10
+                            ? "bg-red-50 text-red-600"
+                            : "bg-green-50 text-green-700"
+                        }`}
+                      >
+                        {p.stock}
+                      </span>
+                    )}
                   </td>
                   <td className="px-5 py-4">
                     {p.isFeatured ? (

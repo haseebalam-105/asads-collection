@@ -22,11 +22,11 @@ const plexMono = IBM_Plex_Mono({ subsets: ["latin"], variable: "--font-plex-mono
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://asad-collection.vercel.app"),
-  title: { default: "Asad's Collection — Premium Rain Protection", template: "%s | Asad's Collection" },
-  description: "Premium waterproof rain coats, bike covers, car covers and home protection products. 100% waterproof, fast delivery across Pakistan, Cash on Delivery.",
+  title: { default: "Asad's Collection — Everything You Need, All in One Collection", template: "%s | Asad's Collection" },
+  description: "Discover quality products for everyday life, work, travel and more. Fast delivery across Pakistan, cash on delivery available.",
   openGraph: {
-    title: "Asad's Collection — Premium Rain Protection",
-    description: "Premium waterproof rain coats, bike covers, car covers and home protection products.",
+    title: "Asad's Collection — Everything You Need, All in One Collection",
+    description: "Discover quality products for everyday life, work, travel and more. Fast delivery across Pakistan.",
     siteName: "Asad's Collection",
     type: "website",
     images: ["/images/logo-new.jpeg"],

@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   X,
+  Tags,
 } from "lucide-react";
 import { useSettings } from "@/context/SettingsContext";
 import { useState } from "react";
@@ -22,6 +23,7 @@ import { useState } from "react";
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/products", label: "Products", icon: Package },
+  { href: "/admin/categories", label: "Categories", icon: Tags },
   { href: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { href: "/admin/customers", label: "Customers", icon: Users },
   { href: "/admin/reviews", label: "Reviews", icon: Star },

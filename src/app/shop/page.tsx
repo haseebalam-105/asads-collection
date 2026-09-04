@@ -1,7 +1,10 @@
 import ShopClient from "@/components/ShopClient";
-import { getAllProductsAsync } from "@/lib/catalog";
+import { getAllProductsAsync, getAllCategoriesAsync } from "@/lib/catalog";
 
 export default async function ShopPage() {
-  const products = await getAllProductsAsync();
-  return <ShopClient initialProducts={products} />;
+  const [products, categories] = await Promise.all([
+    getAllProductsAsync(),
+    getAllCategoriesAsync({ includeInactive: false }),
+  ]);
+  return <ShopClient initialProducts={products} categories={categories} />;
 }

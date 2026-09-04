@@ -4,8 +4,16 @@ import { saveOrder, findOrder } from "@/lib/orders-store";
 import { generateOrderNumber } from "@/lib/format";
 import { getDeliveryFee } from "@/lib/settings";
 import { dbGetSettings } from "@/lib/db/settings";
+import { dbGetProductBySlug } from "@/lib/db/products";
+import {
+  dbDecrementProductStock,
+  dbDecrementVariantStock,
+  dbIncrementProductStock,
+  dbIncrementVariantStock,
+} from "@/lib/db/products";
 import { isDbConfigured } from "@/lib/db";
 import { sendMetaEvent } from "@/lib/meta-capi";
+import { resolveOrderLine } from "@/lib/variants";
 
 // Prevent Next.js from statically caching this route.
 export const dynamic = "force-dynamic";
@@ -34,14 +42,95 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-    const liveSettings = isDbConfigured() ? await dbGetSettings() : undefined;
+    // ============================================================
+    // SERVER-SIDE PRICE/STOCK VALIDATION (CRITICAL — never trust the client)
+    // ============================================================
+    //
+    // For every cart line, we:
+    //   1. Look up the product from MongoDB by slug.
+    //   2. Use resolveOrderLine() to enforce ALL security rules:
+    //      - variantId required for variant products (no fallback to product.price)
+    //      - variant exists on this exact product
+    //      - variant is active
+    //      - variant stock > 0 (zero-stock rejected)
+    //      - quantity <= stock
+    //   3. Overwrite the client-supplied price/image/sku/label/options
+    //      with the server-resolved values so a tampered cart cannot
+    //      change what gets persisted to the order.
+    //
+    // In dev mode (no DB configured), client values are accepted as-is
+    // so the checkout flow still works end-to-end without MongoDB.
+    const DEV_MODE = !isDbConfigured();
+    const authoritativeItems: CartItem[] = [];
+    // Track what stock to decrement AFTER the order is saved. We do the
+    // decrement after save so a failed save doesn't leave us with
+    // decremented stock but no order. If the decrement then fails (race
+    // condition — another customer grabbed the last unit first), we
+    // delete the order and return a failure.
+    const stockOps: Array<{
+      productId: string;
+      variantId?: string;
+      quantity: number;
+    }> = [];
+
+    for (const item of items) {
+      // Basic quantity sanity check.
+      if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+        return NextResponse.json(
+          { error: "Invalid quantity in cart." },
+          { status: 400 }
+        );
+      }
+
+      if (DEV_MODE) {
+        authoritativeItems.push(item);
+        continue;
+      }
+
+      const product = await dbGetProductBySlug(item.slug);
+      if (!product) {
+        return NextResponse.json(
+          { error: `Product "${item.slug}" is no longer available.` },
+          { status: 400 }
+        );
+      }
+      try {
+        const resolved = resolveOrderLine(product, item.variantId, item.quantity);
+        authoritativeItems.push({
+          ...item,
+          price: resolved.price,
+          image: resolved.image,
+          variantSku: resolved.sku,
+          variantLabel: resolved.variantLabel || item.variantLabel,
+          selectedOptions: resolved.selectedOptions,
+          variantId: resolved.variant?.id || item.variantId,
+        });
+        stockOps.push({
+          productId: product.id,
+          variantId: resolved.variant?.id,
+          quantity: item.quantity,
+        });
+      } catch (err: any) {
+        return NextResponse.json(
+          { error: err.message || "Could not validate product price." },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Subtotal is always recomputed server-side from the authoritative
+    // prices — never from client-supplied numbers.
+    const subtotal = authoritativeItems.reduce(
+      (sum, i) => sum + i.price * i.quantity,
+      0
+    );
+    const liveSettings = DEV_MODE ? undefined : await dbGetSettings();
     const deliveryFee = getDeliveryFee(subtotal, liveSettings);
 
     // Discount is always recomputed server-side from the coupon code —
     // never trust a client-supplied discount amount.
     let discount = 0;
-    if (couponCode && isDbConfigured()) {
+    if (couponCode && !DEV_MODE) {
       try {
         const { dbGetActiveCouponByCode } = await import("@/lib/db/coupons");
         const coupon = await dbGetActiveCouponByCode(couponCode);
@@ -59,7 +148,7 @@ export async function POST(req: NextRequest) {
     const order: Order = {
       id: crypto.randomUUID(),
       orderNumber: generateOrderNumber(),
-      items,
+      items: authoritativeItems,
       customer,
       subtotal,
       deliveryFee,
@@ -72,7 +161,72 @@ export async function POST(req: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    await saveOrder(order);
+    // ----- Persist the order (no silent fallback in production) -----
+    try {
+      await saveOrder(order);
+    } catch (saveErr: any) {
+      console.error("[/api/orders] Order persistence failed:", saveErr);
+      return NextResponse.json(
+        { error: "We could not place your order due to a server issue. Please try again." },
+        { status: 503 }
+      );
+    }
+
+    // ----- Atomic stock decrement (overselling protection) -----
+    // After the order is persisted, decrement stock atomically. If any
+    // decrement fails (race condition — another customer grabbed the
+    // last unit between our validation and now), we roll back the
+    // already-applied decrements and delete the order, then return a
+    // failure so the customer knows to retry.
+    if (!DEV_MODE && stockOps.length > 0) {
+      const applied: Array<{ productId: string; variantId?: string; quantity: number }> = [];
+      let conflict = false;
+      for (const op of stockOps) {
+        const ok = op.variantId
+          ? await dbDecrementVariantStock(op.productId, op.variantId, op.quantity)
+          : await dbDecrementProductStock(op.productId, op.quantity);
+        if (!ok) {
+          conflict = true;
+          break;
+        }
+        applied.push(op);
+      }
+      if (conflict) {
+        // Roll back the decrements that did succeed.
+        for (const op of applied) {
+          try {
+            if (op.variantId) {
+              await dbIncrementVariantStock(op.productId, op.variantId, op.quantity);
+            } else {
+              await dbIncrementProductStock(op.productId, op.quantity);
+            }
+          } catch (rollbackErr) {
+            // Best-effort rollback — log it so an admin can reconcile.
+            console.error(
+              `[/api/orders] STOCK ROLLBACK FAILED for product ${op.productId}` +
+                (op.variantId ? ` variant ${op.variantId}` : "") +
+                ` qty ${op.quantity}:`,
+              rollbackErr
+            );
+          }
+        }
+        // Delete the order so the customer isn't charged for stock we
+        // couldn't allocate.
+        try {
+          const { dbDeleteOrder } = await import("@/lib/db/orders");
+          await dbDeleteOrder(order.id);
+        } catch (delErr) {
+          console.error("[/api/orders] Failed to delete order after stock conflict:", delErr);
+        }
+        return NextResponse.json(
+          {
+            error:
+              "Sorry — one of the items in your cart just sold out. Please refresh your cart and try again.",
+          },
+          { status: 409 }
+        );
+      }
+    }
 
     try {
       const { sendOrderConfirmationEmail } = await import("@/lib/mail");
@@ -88,7 +242,7 @@ export async function POST(req: NextRequest) {
     // is reused as the event_id so the browser-side Purchase fired on the
     // confirmation page (same id) gets deduplicated by Meta into one event.
     try {
-      if (isDbConfigured()) {
+      if (!DEV_MODE) {
         const settings = liveSettings || (await dbGetSettings());
         const ip =
           req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -114,10 +268,14 @@ export async function POST(req: NextRequest) {
           customData: {
             currency: "PKR",
             value: order.total,
-            content_ids: items.map((i) => i.productId),
+            content_ids: authoritativeItems.map((i) => i.productId),
             content_type: "product",
-            contents: items.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
-            num_items: items.reduce((sum, i) => sum + i.quantity, 0),
+            contents: authoritativeItems.map((i) => ({
+              id: i.productId,
+              quantity: i.quantity,
+              item_price: i.price,
+            })),
+            num_items: authoritativeItems.reduce((sum, i) => sum + i.quantity, 0),
             order_id: order.orderNumber,
           },
         });
@@ -128,6 +286,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ order, metaEventId: order.id }, { status: 201 });
   } catch (err) {
+    console.error("[/api/orders] Unhandled error:", err);
     return NextResponse.json({ error: "Could not place order." }, { status: 500 });
   }
 }

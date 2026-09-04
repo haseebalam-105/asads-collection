@@ -94,22 +94,35 @@ export default function AdminOrderDetailPage() {
           <section className="rounded-xl2 bg-white p-5 shadow-card">
             <h2 className="mb-3 font-display text-sm font-bold text-ink">Items</h2>
             <ul className="space-y-3">
-              {order.items.map((item, i) => (
-                <li key={i} className="flex gap-3">
-                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-mist">
-                    <Image src={item.image} alt={item.name.en} fill className="object-cover" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-ink">{item.name.en}</p>
-                    <p className="text-xs text-storm">
-                      {[item.size, item.color].filter(Boolean).join(" · ")} · Qty {item.quantity}
+              {order.items.map((item, i) => {
+                const subtitleParts: string[] = [];
+                if (item.variantLabel) subtitleParts.push(item.variantLabel);
+                else {
+                  if (item.size) subtitleParts.push(item.size);
+                  if (item.color) subtitleParts.push(item.color);
+                }
+                const subtitle = subtitleParts.join(" · ");
+                return (
+                  <li key={i} className="flex gap-3">
+                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-mist">
+                      <Image src={item.image} alt={item.name.en} fill className="object-cover" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-ink">{item.name.en}</p>
+                      <p className="text-xs text-storm">
+                        {subtitle && <span>{subtitle} · </span>}
+                        Qty {item.quantity}
+                        {item.variantSku && (
+                          <span className="font-mono"> · {item.variantSku}</span>
+                        )}
+                      </p>
+                    </div>
+                    <p className="font-mono text-sm font-semibold text-deep">
+                      {formatPKR(item.price * item.quantity)}
                     </p>
-                  </div>
-                  <p className="font-mono text-sm font-semibold text-deep">
-                    {formatPKR(item.price * item.quantity)}
-                  </p>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
             <div className="mt-4 space-y-1.5 border-t border-mist-dark pt-3 text-sm">
               <div className="flex justify-between text-storm">

@@ -13,6 +13,9 @@ interface AdminReview {
   createdAt: string;
   productId: string;
   productName: string;
+  title?: string;
+  customerEmail?: string;
+  verifiedPurchase?: boolean;
 }
 
 export default function AdminReviewsPage() {
@@ -63,8 +66,18 @@ export default function AdminReviewsPage() {
           <div key={r.id} className="rounded-xl2 bg-white p-5 shadow-card">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-ink">{r.customerName}</p>
-                <p className="text-xs text-storm">on {r.productName}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-ink">{r.customerName}</p>
+                  {r.verifiedPurchase && (
+                    <span className="rounded-full bg-green-50 px-2 py-0.5 text-[9px] font-bold text-green-700">
+                      Verified Purchase
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-storm">
+                  on {r.productName}
+                  {r.customerEmail && ` · ${r.customerEmail}`}
+                </p>
                 <div className="mt-1.5">
                   <StarRating rating={r.rating} />
                 </div>
@@ -77,7 +90,13 @@ export default function AdminReviewsPage() {
                 {r.approved ? "Approved" : "Pending"}
               </span>
             </div>
-            <p className="mt-3 text-sm text-ink/80">{r.comment}</p>
+            {r.title && (
+              <p className="mt-2 text-sm font-bold text-ink">{r.title}</p>
+            )}
+            <p className="mt-2 text-sm text-ink/80">{r.comment}</p>
+            <p className="mt-2 text-[10px] text-storm/60">
+              {new Date(r.createdAt).toLocaleString()}
+            </p>
             <div className="mt-4 flex items-center gap-2">
               {!r.approved && (
                 <button

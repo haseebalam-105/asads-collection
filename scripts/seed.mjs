@@ -182,12 +182,84 @@ const products = [
   },
 ];
 
+const categories = [
+  {
+    id: "cat-raincoats",
+    name: { en: "Rain Coats", ur: "رین کوٹ" },
+    slug: "raincoats",
+    description: { en: "Waterproof rain coats and suits", ur: "واٹر پروف رین کوٹ" },
+    image: "/images/rain-suit.jpeg",
+    active: true,
+    createdAt: "2026-01-01T00:00:00.000Z",
+  },
+  {
+    id: "cat-bike-covers",
+    name: { en: "Bike Covers", ur: "بائیک کور" },
+    slug: "bike-covers",
+    description: { en: "All-weather motorcycle covers", ur: "تمام موسموں کے لیے بائیک کور" },
+    image: "/images/bike-cover.jpeg",
+    active: true,
+    createdAt: "2026-01-01T00:00:00.000Z",
+  },
+  {
+    id: "cat-car-covers",
+    name: { en: "Car Covers", ur: "کار کور" },
+    slug: "car-covers",
+    description: { en: "Premium waterproof car covers", ur: "پریمیم واٹر پروف کار کور" },
+    image: "/images/car-cover.jpeg",
+    active: true,
+    createdAt: "2026-01-01T00:00:00.000Z",
+  },
+  {
+    id: "cat-home-protection",
+    name: { en: "Home Protection", ur: "گھریلو تحفظ" },
+    slug: "home-protection",
+    description: { en: "Waterproof home essentials", ur: "گھر کے لیے واٹر پروف سامان" },
+    image: "/images/bedsheet-cover.jpeg",
+    active: true,
+    createdAt: "2026-01-01T00:00:00.000Z",
+  },
+];
+
+// Attach categoryId to each seeded product so the new schema is populated
+// from the start. Legacy `category` slug is kept for backward compatibility.
+const categorySlugToId = Object.fromEntries(
+  categories.map((c) => [c.slug, c.id])
+);
+for (const product of products) {
+  product.categoryId = categorySlugToId[product.category] || undefined;
+}
+
 async function seed() {
   const client = new MongoClient(uri);
   await client.connect();
   const db = client.db(process.env.MONGODB_DB || "asads_collection");
 
+  // Seed categories first so product.categoryId references resolve.
+  const catCollection = db.collection("categories");
+  try {
+    await catCollection.createIndex({ slug: 1 }, { unique: true });
+    await catCollection.createIndex({ id: 1 }, { unique: true });
+  } catch {
+    // indexes may already exist — safe to ignore
+  }
+  for (const category of categories) {
+    await catCollection.updateOne(
+      { slug: category.slug },
+      { $set: category },
+      { upsert: true }
+    );
+    console.log(`Seeded category: ${category.name.en}`);
+  }
+
   const collection = db.collection("products");
+  try {
+    await collection.createIndex({ slug: 1 }, { unique: true });
+    await collection.createIndex({ id: 1 }, { unique: true });
+    await collection.createIndex({ categoryId: 1 });
+  } catch {
+    // indexes may already exist — safe to ignore
+  }
   for (const product of products) {
     await collection.updateOne(
       { slug: product.slug },
@@ -203,7 +275,7 @@ async function seed() {
     { upsert: true }
   );
 
-  console.log(`\nDone. ${products.length} products seeded into "${db.databaseName}".`);
+  console.log(`\nDone. ${categories.length} categories and ${products.length} products seeded into "${db.databaseName}".`);
   await client.close();
 }
 

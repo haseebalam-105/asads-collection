@@ -1,9 +1,13 @@
-import { Product } from "@/types/product";
+import { Category, Product } from "@/types/product";
 import { isDbConfigured } from "@/lib/db";
-import { products as staticProducts, categories } from "@/lib/products";
+import {
+  products as staticProducts,
+  categories as staticCategories,
+} from "@/lib/products";
 import { dbGetAllProducts, dbGetProductBySlug } from "@/lib/db/products";
+import { dbGetActiveCategories, dbGetAllCategories } from "@/lib/db/categories";
 
-export { categories };
+export { categories as staticCategories } from "@/lib/products";
 
 /**
  * Single source of truth for storefront product data. Uses MongoDB when
@@ -48,4 +52,37 @@ export async function getRelatedProductsAsync(slug: string, limit = 4): Promise<
     .filter((p) => p.slug !== slug && p.category === current.category)
     .concat(all.filter((p) => p.slug !== slug && p.category !== current.category))
     .slice(0, limit);
+}
+
+/**
+ * Dynamic categories: uses MongoDB `categories` collection when configured,
+ * falls back to the static list in lib/products.ts otherwise. Admin-created
+ * categories appear here immediately without a redeploy.
+ *
+ * Pass `includeInactive: true` for admin views; storefront uses the default
+ * (active-only) so customers never see hidden categories.
+ */
+export async function getAllCategoriesAsync(
+  options: { includeInactive?: boolean } = {}
+): Promise<Category[]> {
+  if (isDbConfigured()) {
+    try {
+      const cats = options.includeInactive
+        ? await dbGetAllCategories()
+        : await dbGetActiveCategories();
+      if (cats.length > 0) return cats;
+      // If DB is configured but empty, fall through to static so the
+      // storefront still renders before the admin has created any
+      // categories.
+    } catch {
+      // fall through to static
+    }
+  }
+  return staticCategories.map((c) => ({
+    id: c.slug,
+    name: c.name,
+    slug: c.slug,
+    active: true,
+    createdAt: "2026-01-01T00:00:00.000Z",
+  }));
 }

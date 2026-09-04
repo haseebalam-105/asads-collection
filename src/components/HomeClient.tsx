@@ -5,23 +5,25 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import {
   ShieldCheck,
-  Sparkles,
-  MousePointerClick,
   Truck,
+  MousePointerClick,
   Headphones,
+  BadgeCheck,
   ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
 import Hero from "@/components/Hero";
 import ProductCard from "@/components/ProductCard";
-import StarRating from "@/components/StarRating";
+import { StarRatingDisplay } from "@/components/StarRating";
 import { useLanguage } from "@/context/LanguageContext";
-import { categories } from "@/lib/products";
-import { Product } from "@/types/product";
+import { Category, Product } from "@/types/product";
 
-const whyIcons = [ShieldCheck, Sparkles, MousePointerClick, Truck, Headphones];
+const whyIcons = [ShieldCheck, Truck, MousePointerClick, Headphones, BadgeCheck];
 
-const categoryImages: Record<string, string> = {
+/** Static fallback image mapping for the legacy seed categories. New
+ *  admin-created categories can attach their own image via the category
+ *  editor; if neither exists, we render a neutral gradient tile. */
+const legacyCategoryImages: Record<string, string> = {
   raincoats: "/images/rain-suit.jpeg",
   "bike-covers": "/images/bike-cover.jpeg",
   "car-covers": "/images/car-cover.jpeg",
@@ -33,19 +35,19 @@ const testimonials = [
     name: "Hamza R.",
     location: "Lahore",
     rating: 5,
-    text: "Kept me completely dry on the bike during heavy rain. Great stitching quality and fast delivery.",
+    text: "Great quality and fast delivery. The product matched the description perfectly. Will order again.",
   },
   {
     name: "Adnan M.",
     location: "Karachi",
     rating: 5,
-    text: "Premium quality car cover, exact fit for my sedan. COD made it an easy decision to order.",
+    text: "Excellent service and genuine products. Cash on delivery made it an easy decision to order.",
   },
   {
     name: "Mariam A.",
     location: "Islamabad",
     rating: 4,
-    text: "Very soft bedsheet cover for something waterproof — no plastic crinkle sound at all.",
+    text: "Good quality product, exactly as described. Delivery was quick and the packaging was secure.",
   },
 ];
 
@@ -88,14 +90,30 @@ const faqsByLocale = {
   ],
 };
 
-export default function HomeClient({ featured }: { featured: Product[] }) {
+export default function HomeClient({
+  featured,
+  categories,
+}: {
+  featured: Product[];
+  categories: Category[];
+}) {
   const { t, locale } = useLanguage();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const faqs = faqsByLocale[locale];
 
   return (
     <div>
-      <Hero />
+      <Hero
+        featuredProducts={featured
+          .filter((p) => p.images?.[0])
+          .slice(0, 4)
+          .map((p) => ({
+            slug: p.slug,
+            name: p.name.en,
+            image: p.images[0],
+            price: p.price,
+          }))}
+      />
 
       {/* Offer banner */}
       <section className="bg-gold">
@@ -130,25 +148,38 @@ export default function HomeClient({ featured }: { featured: Product[] }) {
           {t.home.categories}
         </h2>
         <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
-          {categories.map((c) => (
-            <Link
-              key={c.slug}
-              href={`/shop?category=${c.slug}`}
-              className="focus-ring group relative block aspect-[4/5] overflow-hidden rounded-xl2 shadow-card transition-shadow hover:shadow-card-hover"
-            >
-              <Image
-                src={categoryImages[c.slug]}
-                alt={c.name[locale]}
-                fill
-                sizes="(max-width: 768px) 50vw, 25vw"
-                className="object-cover transition-transform duration-500 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/10 to-transparent" />
-              <span className="absolute bottom-4 rtl:right-4 ltr:left-4 font-display text-sm font-bold text-white sm:text-base">
-                {c.name[locale]}
-              </span>
-            </Link>
-          ))}
+          {categories.length === 0 ? (
+            <p className="col-span-full py-10 text-center text-sm text-storm">
+              No categories yet. Add some in the admin panel.
+            </p>
+          ) : (
+            categories.map((c) => {
+              const imageSrc = c.image || legacyCategoryImages[c.slug];
+              return (
+                <Link
+                  key={c.id}
+                  href={`/shop?category=${c.slug}`}
+                  className="focus-ring group relative block aspect-[4/5] overflow-hidden rounded-xl2 bg-mist shadow-card transition-shadow hover:shadow-card-hover"
+                >
+                  {imageSrc ? (
+                    <Image
+                      src={imageSrc}
+                      alt={c.name[locale]}
+                      fill
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-deep to-deep-light" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/10 to-transparent" />
+                  <span className="absolute bottom-4 rtl:right-4 ltr:left-4 font-display text-sm font-bold text-white sm:text-base">
+                    {c.name[locale]}
+                  </span>
+                </Link>
+              );
+            })
+          )}
         </div>
       </section>
 
@@ -199,7 +230,7 @@ export default function HomeClient({ featured }: { featured: Product[] }) {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           {testimonials.map((r) => (
             <div key={r.name} className="rounded-xl2 border border-mist-dark p-6">
-              <StarRating rating={r.rating} size={16} />
+              <StarRatingDisplay rating={r.rating} size={16} />
               <p className="mt-3 text-sm leading-relaxed text-ink/80">“{r.text}”</p>
               <p className="mt-4 text-xs font-semibold text-storm">
                 {r.name} · {r.location}

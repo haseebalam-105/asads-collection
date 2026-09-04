@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Banknote, Loader2, Tag, X, ShieldCheck, User, MapPin, CreditCard } from "lucide-react";
-import { useCart } from "@/context/CartContext";
+import { useCart, cartLineKey, cartLineSubtitle } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { formatPKR } from "@/lib/format";
 import { getDeliveryFee } from "@/lib/settings";
@@ -139,17 +139,26 @@ export default function CheckoutPage() {
       // API (reliable, works even if this browser call never fires). This
       // just fires the matching browser-side Pixel event, using the same
       // event_id, so Meta dedupes the two into a single counted Purchase.
-      if (data.metaEventId) {
+      //
+      // IMPORTANT: use the AUTHORITATIVE order returned by the server
+      // (data.order) for value/items/price — never the client-side cart
+      // totals, which could have been tampered with or gone stale.
+      if (data.metaEventId && data.order) {
+        const serverOrder = data.order;
         trackMetaPixelOnly(
           "Purchase",
           {
             currency: "PKR",
-            value: total,
-            content_ids: items.map((i) => i.productId),
+            value: serverOrder.total,
+            content_ids: serverOrder.items.map((i: { productId: string }) => i.productId),
             content_type: "product",
-            contents: items.map((i) => ({ id: i.productId, quantity: i.quantity, item_price: i.price })),
-            num_items: items.reduce((sum, i) => sum + i.quantity, 0),
-            order_id: data.order.orderNumber,
+            contents: serverOrder.items.map((i: { productId: string; quantity: number; price: number }) => ({
+              id: i.productId,
+              quantity: i.quantity,
+              item_price: i.price,
+            })),
+            num_items: serverOrder.items.reduce((sum: number, i: { quantity: number }) => sum + i.quantity, 0),
+            order_id: serverOrder.orderNumber,
           },
           data.metaEventId
         );
@@ -333,30 +342,38 @@ export default function CheckoutPage() {
               {t.checkout.orderSummary}
             </h2>
             <ul className="space-y-4">
-              {items.map((item) => (
-                <li
-                  key={`${item.productId}-${item.size}-${item.color}`}
-                  className="flex gap-3"
-                >
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-mist">
-                    <Image src={item.image} alt={item.name[locale]} fill className="object-cover" />
-                    <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-deep text-[10px] font-bold text-white shadow-sm">
-                      {item.quantity}
+              {items.map((item) => {
+                const subtitle = cartLineSubtitle(item, locale);
+                return (
+                  <li
+                    key={cartLineKey(item)}
+                    className="flex gap-3"
+                  >
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-mist">
+                      <Image src={item.image} alt={item.name[locale]} fill className="object-cover" />
+                      <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-deep text-[10px] font-bold text-white shadow-sm">
+                        {item.quantity}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="line-clamp-1 text-xs font-semibold text-ink">
+                        {item.name[locale]}
+                      </p>
+                      {subtitle && (
+                        <p className="mt-0.5 text-[11px] text-storm">{subtitle}</p>
+                      )}
+                      {item.variantSku && (
+                        <p className="font-mono text-[10px] text-storm/70">
+                          {item.variantSku}
+                        </p>
+                      )}
+                    </div>
+                    <span className="shrink-0 font-mono text-xs font-semibold text-deep">
+                      {formatPKR(item.price * item.quantity)}
                     </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="line-clamp-1 text-xs font-semibold text-ink">
-                      {item.name[locale]}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-storm">
-                      {[item.size, item.color].filter(Boolean).join(" · ")}
-                    </p>
-                  </div>
-                  <span className="shrink-0 font-mono text-xs font-semibold text-deep">
-                    {formatPKR(item.price * item.quantity)}
-                  </span>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
 
             <div className="mt-5 border-t border-mist-dark pt-4">

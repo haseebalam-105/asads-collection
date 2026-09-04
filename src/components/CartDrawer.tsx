@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Minus, Plus, Trash2 } from "lucide-react";
-import { useCart } from "@/context/CartContext";
+import { useCart, cartLineKey, cartLineSubtitle } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { formatPKR } from "@/lib/format";
 
@@ -60,78 +60,67 @@ export default function CartDrawer() {
               <>
                 <div className="flex-1 overflow-y-auto p-4">
                   <ul className="space-y-4">
-                    {items.map((item) => (
-                      <li
-                        key={`${item.productId}-${item.size}-${item.color}`}
-                        className="flex gap-3"
-                      >
-                        <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-mist">
-                          <Image
-                            src={item.image}
-                            alt={item.name[locale]}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <div className="flex flex-1 flex-col justify-between">
-                          <div>
-                            <p className="line-clamp-1 text-sm font-semibold text-ink">
-                              {item.name[locale]}
-                            </p>
-                            <p className="text-xs text-storm">
-                              {[item.size, item.color].filter(Boolean).join(" · ")}
-                            </p>
+                    {items.map((item) => {
+                      const subtitle = cartLineSubtitle(item, locale);
+                      return (
+                        <li key={cartLineKey(item)} className="flex gap-3">
+                          <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-mist">
+                            <Image
+                              src={item.image}
+                              alt={item.name[locale]}
+                              fill
+                              className="object-cover"
+                            />
                           </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 rounded-full border border-mist-dark px-2 py-1">
-                              <button
-                                onClick={() =>
-                                  updateQuantity(
-                                    item.productId,
-                                    item.quantity - 1,
-                                    item.size,
-                                    item.color
-                                  )
-                                }
-                                className="focus-ring text-storm hover:text-deep"
-                                aria-label="Decrease quantity"
-                              >
-                                <Minus size={13} />
-                              </button>
-                              <span className="w-4 text-center text-xs font-semibold">
-                                {item.quantity}
-                              </span>
-                              <button
-                                onClick={() =>
-                                  updateQuantity(
-                                    item.productId,
-                                    item.quantity + 1,
-                                    item.size,
-                                    item.color
-                                  )
-                                }
-                                className="focus-ring text-storm hover:text-deep"
-                                aria-label="Increase quantity"
-                              >
-                                <Plus size={13} />
-                              </button>
+                          <div className="flex flex-1 flex-col justify-between">
+                            <div>
+                              <p className="line-clamp-1 text-sm font-semibold text-ink">
+                                {item.name[locale]}
+                              </p>
+                              {subtitle && (
+                                <p className="text-xs text-storm">{subtitle}</p>
+                              )}
+                              {item.variantSku && (
+                                <p className="font-mono text-[10px] text-storm/70">
+                                  {item.variantSku}
+                                </p>
+                              )}
                             </div>
-                            <span className="font-mono text-sm font-semibold text-deep">
-                              {formatPKR(item.price * item.quantity)}
-                            </span>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 rounded-full border border-mist-dark px-2 py-1">
+                                <button
+                                  onClick={() => updateQuantity(item, item.quantity - 1)}
+                                  className="focus-ring text-storm hover:text-deep"
+                                  aria-label="Decrease quantity"
+                                >
+                                  <Minus size={13} />
+                                </button>
+                                <span className="w-4 text-center text-xs font-semibold">
+                                  {item.quantity}
+                                </span>
+                                <button
+                                  onClick={() => updateQuantity(item, item.quantity + 1)}
+                                  className="focus-ring text-storm hover:text-deep"
+                                  aria-label="Increase quantity"
+                                >
+                                  <Plus size={13} />
+                                </button>
+                              </div>
+                              <span className="font-mono text-sm font-semibold text-deep">
+                                {formatPKR(item.price * item.quantity)}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                        <button
-                          onClick={() =>
-                            removeItem(item.productId, item.size, item.color)
-                          }
-                          className="focus-ring self-start text-storm hover:text-red-500"
-                          aria-label={t.cart.remove}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </li>
-                    ))}
+                          <button
+                            onClick={() => removeItem(item)}
+                            className="focus-ring self-start text-storm hover:text-red-500"
+                            aria-label={t.cart.remove}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
 

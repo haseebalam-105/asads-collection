@@ -5,20 +5,32 @@ import { useSearchParams } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import { useLanguage } from "@/context/LanguageContext";
-import { categories } from "@/lib/products";
-import { Product } from "@/types/product";
+import { Category, Product } from "@/types/product";
+import { getDisplayPrice, hasVariants } from "@/lib/variants";
 
 type SortKey = "newest" | "price-low" | "price-high" | "popular";
 
-export default function ShopClient({ initialProducts }: { initialProducts: Product[] }) {
+export default function ShopClient({
+  initialProducts,
+  categories,
+}: {
+  initialProducts: Product[];
+  categories: Category[];
+}) {
   return (
     <Suspense fallback={null}>
-      <ShopPageContent initialProducts={initialProducts} />
+      <ShopPageContent initialProducts={initialProducts} categories={categories} />
     </Suspense>
   );
 }
 
-function ShopPageContent({ initialProducts }: { initialProducts: Product[] }) {
+function ShopPageContent({
+  initialProducts,
+  categories,
+}: {
+  initialProducts: Product[];
+  categories: Category[];
+}) {
   const { t, locale } = useLanguage();
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get("category") || "all";
@@ -27,16 +39,39 @@ function ShopPageContent({ initialProducts }: { initialProducts: Product[] }) {
   const [category, setCategory] = useState(initialCategory);
   const [query, setQuery] = useState(initialQuery);
   const [sort, setSort] = useState<SortKey>("newest");
-  const [maxPrice, setMaxPrice] = useState(5000);
+
+  // Dynamic max price — derived from the highest variant or product price,
+  // rounded up to the next 500 so the slider has sensible steps.
+  const computedMaxPrice = useMemo(() => {
+    const allPrices = initialProducts.flatMap((p) =>
+      hasVariants(p) && p.variants && p.variants.length > 0
+        ? p.variants.filter((v) => v.active).map((v) => v.price)
+        : [p.price]
+    );
+    if (allPrices.length === 0) return 5000;
+    const max = Math.max(...allPrices);
+    // Round up to the next 500
+    return Math.max(5000, Math.ceil(max / 500) * 500);
+  }, [initialProducts]);
+
+  const [maxPrice, setMaxPrice] = useState(computedMaxPrice);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const products = initialProducts;
 
   const filtered = useMemo(() => {
-    let list = products.filter((p) => p.price <= maxPrice);
+    let list = products.filter((p) => getDisplayPrice(p) <= maxPrice);
 
     if (category !== "all") {
-      list = list.filter((p) => p.category === category);
+      // Match by category slug (legacy) OR categoryId (new).
+      // For legacy products, p.category is a slug; for new ones, the
+      // category object's slug is matched against either p.category or
+      // via the categories list lookup.
+      list = list.filter((p) => {
+        if (p.category === category) return true;
+        const cat = categories.find((c) => c.slug === category);
+        return cat && p.categoryId === cat.id;
+      });
     }
     if (query.trim()) {
       const q = query.toLowerCase();
@@ -50,10 +85,10 @@ function ShopPageContent({ initialProducts }: { initialProducts: Product[] }) {
 
     switch (sort) {
       case "price-low":
-        list = [...list].sort((a, b) => a.price - b.price);
+        list = [...list].sort((a, b) => getDisplayPrice(a) - getDisplayPrice(b));
         break;
       case "price-high":
-        list = [...list].sort((a, b) => b.price - a.price);
+        list = [...list].sort((a, b) => getDisplayPrice(b) - getDisplayPrice(a));
         break;
       case "popular":
         list = [...list].sort((a, b) => b.reviewCount - a.reviewCount);
@@ -65,7 +100,7 @@ function ShopPageContent({ initialProducts }: { initialProducts: Product[] }) {
     }
 
     return list;
-  }, [products, category, query, sort, maxPrice]);
+  }, [products, category, query, sort, maxPrice, categories]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -123,7 +158,7 @@ function ShopPageContent({ initialProducts }: { initialProducts: Product[] }) {
                 </button>
                 {categories.map((c) => (
                   <button
-                    key={c.slug}
+                    key={c.id}
                     onClick={() => setCategory(c.slug)}
                     className={`focus-ring block w-full rounded-lg px-3 py-2 text-left rtl:text-right text-sm ${
                       category === c.slug ? "bg-deep text-white" : "hover:bg-mist"
@@ -142,7 +177,7 @@ function ShopPageContent({ initialProducts }: { initialProducts: Product[] }) {
               <input
                 type="range"
                 min={500}
-                max={5000}
+                max={computedMaxPrice}
                 step={100}
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}

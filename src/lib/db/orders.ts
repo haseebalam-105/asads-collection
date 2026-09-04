@@ -38,6 +38,13 @@ export async function dbGetOrderById(id: string): Promise<Order | null> {
     .findOne({ id }, { projection: { _id: 0 } }) as Promise<Order | null>;
 }
 
+/** Delete an order by id — used to roll back an order when a stock
+ *  decrement fails after the order was already saved (race condition). */
+export async function dbDeleteOrder(id: string): Promise<void> {
+  const db = await getDb();
+  await db.collection(COLLECTION).deleteOne({ id });
+}
+
 export async function dbFindOrder(orderNumber: string, phone: string): Promise<Order | null> {
   const db = await getDb();
   const cleanPhone = phone.replace(/\s|-/g, "");
